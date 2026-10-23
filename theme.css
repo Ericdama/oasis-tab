@@ -1,0 +1,392 @@
+/* =========================================================
+   Oasis — Fight Club theme (default)
+   Everything here is scoped to html[data-theme="fightclub"],
+   so switching to the "oasis" theme restores the glass look.
+   ========================================================= */
+
+html[data-theme="fightclub"] {
+  --font-ui: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font-display: "Special Elite", "Courier New", Courier, monospace;
+
+  --text: #ece9df;
+  --text-soft: rgba(236, 233, 223, 0.72);
+  --text-faint: rgba(236, 233, 223, 0.48);
+
+  --glass-bg: rgba(14, 15, 13, 0.7);
+  --glass-bg-strong: rgba(32, 33, 28, 0.88);
+  --glass-border: rgba(236, 233, 223, 0.22);
+  --glass-glow: 0 0 0 1px rgba(0, 0, 0, 0.55) inset, 0 12px 32px rgba(0, 0, 0, 0.5);
+  --blur: blur(5px) saturate(70%);
+
+  --accent: #e7a2b5;
+  --danger: #ff8f7e;
+
+  --radius-lg: 4px;
+  --radius-md: 3px;
+  --widget-radius: 3px;
+}
+
+html[data-theme="fightclub"] body {
+  background: #0c0d0b;
+}
+
+html[data-theme="fightclub"] .wallpaper {
+  background-color: #0c0d0b;
+  background-image: linear-gradient(170deg, #1b1d19 0%, #2a2d26 55%, #11120f 100%);
+}
+
+/* Colour grade: desaturate, add contrast, tint toward sickly green, heavy vignette */
+html[data-theme="fightclub"] .scrim {
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(8, 10, 6, 0.15), rgba(3, 4, 2, 0.82) 100%),
+    linear-gradient(rgba(74, 86, 52, 0.16), rgba(74, 86, 52, 0.16));
+  -webkit-backdrop-filter: saturate(0.7) contrast(1.12);
+  backdrop-filter: saturate(0.7) contrast(1.12);
+}
+
+/* Projector flicker: a few irregular dips in brightness */
+html[data-theme="fightclub"] .scrim::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  animation: fc-flicker 9s steps(1) infinite;
+}
+
+@keyframes fc-flicker {
+  0%, 100% { opacity: 0; }
+  12% { opacity: 0.07; }
+  12.4% { opacity: 0; }
+  47% { opacity: 0.1; }
+  47.3% { opacity: 0.02; }
+  47.7% { opacity: 0.08; }
+  48% { opacity: 0; }
+  84% { opacity: 0.06; }
+  84.4% { opacity: 0; }
+}
+
+html[data-theme="fightclub"] .grain {
+  opacity: 0.22;
+}
+
+/* ---------- Header ---------- */
+html[data-theme="fightclub"] .clock {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(72px, 14vw, 156px);
+  letter-spacing: 0.01em;
+  /* Misregistered print: pink and green ghosts either side of the numerals */
+  text-shadow:
+    3px 0 0 rgba(231, 162, 181, 0.38),
+    -3px 0 0 rgba(160, 196, 150, 0.3),
+    0 8px 36px rgba(0, 0, 0, 0.55);
+}
+
+html[data-theme="fightclub"] .clock-suffix {
+  font-family: var(--font-ui);
+  font-size: 0.14em;
+  text-shadow: none;
+}
+
+html[data-theme="fightclub"] .greeting {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(20px, 2.6vw, 28px);
+  letter-spacing: 0.05em;
+}
+
+html[data-theme="fightclub"] .quote {
+  max-width: 52ch;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* ---------- Search ---------- */
+html[data-theme="fightclub"] .search {
+  padding: 6px 6px 6px 8px;
+}
+
+html[data-theme="fightclub"] .search:focus-within {
+  background: var(--glass-bg-strong);
+  border-color: rgba(231, 162, 181, 0.7);
+  box-shadow: 0 0 0 3px rgba(231, 162, 181, 0.2), var(--glass-glow);
+}
+
+html[data-theme="fightclub"] .engine-btn,
+html[data-theme="fightclub"] .search-submit {
+  border-radius: 2px;
+}
+
+html[data-theme="fightclub"] .engine-btn {
+  font-size: 13px;
+}
+
+html[data-theme="fightclub"] .engine-menu {
+  border-radius: 3px;
+  background: rgba(14, 15, 13, 0.95);
+}
+
+html[data-theme="fightclub"] .engine-menu li {
+  border-radius: 2px;
+  font-size: 13px;
+}
+
+html[data-theme="fightclub"] #searchInput {
+  font-size: 15px;
+}
+
+html[data-theme="fightclub"] .search-submit:hover {
+  transform: none;
+  background: var(--accent);
+  color: #2a1218;
+}
+
+/* ---------- Shortcuts ---------- */
+html[data-theme="fightclub"] .link-icon,
+html[data-theme="fightclub"] .folder-link .fav {
+  border-radius: 4px;
+}
+
+html[data-theme="fightclub"] .link-anchor:hover .link-icon,
+html[data-theme="fightclub"] .link-anchor:focus-visible .link-icon {
+  transform: translateY(-5px) rotate(-3deg);
+  border-color: rgba(231, 162, 181, 0.75);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5) inset, 0 14px 28px rgba(0, 0, 0, 0.55);
+}
+
+html[data-theme="fightclub"] .link-label {
+  font-size: 12px;
+}
+
+/* ---------- Widgets ---------- */
+html[data-theme="fightclub"] .widget {
+  /* Stencil-cut inner edge */
+  outline: 1px dashed rgba(236, 233, 223, 0.14);
+  outline-offset: -6px;
+}
+
+html[data-theme="fightclub"] .widget-action:hover,
+html[data-theme="fightclub"] .widget-action:focus-visible {
+  border-color: rgba(231, 162, 181, 0.6);
+}
+
+html[data-theme="fightclub"] .widget h3,
+html[data-theme="fightclub"] .cd-name,
+html[data-theme="fightclub"] .wx-city,
+html[data-theme="fightclub"] .folder-name {
+  font-size: 12px;
+}
+
+html[data-theme="fightclub"] .widget h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 15px;
+}
+
+html[data-theme="fightclub"] .wc-time,
+html[data-theme="fightclub"] .cd-count,
+html[data-theme="fightclub"] .wx-temp,
+html[data-theme="fightclub"] .cal-day {
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+
+html[data-theme="fightclub"] .widget-clock {
+  background: rgba(8, 9, 7, 0.82);
+}
+
+html[data-theme="fightclub"] .widget-countdown {
+  background: rgba(14, 15, 13, 0.7);
+}
+
+html[data-theme="fightclub"] .cd-count {
+  color: var(--accent);
+}
+
+html[data-theme="fightclub"] .widget-weather {
+  background: rgba(14, 15, 13, 0.7);
+}
+
+html[data-theme="fightclub"] .wx-temp {
+  color: #c9d3a0;
+}
+
+/* Paper cards */
+html[data-theme="fightclub"] .widget-calendar,
+html[data-theme="fightclub"] .widget-quickcopy {
+  background: #e8e3d3;
+  border-color: #e8e3d3;
+  color: #1c1d1a;
+  outline-color: rgba(28, 29, 26, 0.18);
+}
+
+html[data-theme="fightclub"] .cal-month {
+  background: #b4513a;
+  font-weight: 600;
+}
+
+html[data-theme="fightclub"] .cal-week {
+  color: #5c5a4c;
+}
+
+html[data-theme="fightclub"] .qc-head {
+  background: #e7a2b5;
+}
+
+html[data-theme="fightclub"] .widget-quickcopy h3,
+html[data-theme="fightclub"] .qc-add {
+  color: #2a1218;
+}
+
+html[data-theme="fightclub"] .qc-add {
+  border-radius: 3px;
+}
+
+html[data-theme="fightclub"] .qc-copy {
+  color: #1c1d1a;
+  font-size: 12px;
+}
+
+html[data-theme="fightclub"] .widget-quickcopy .empty,
+html[data-theme="fightclub"] .qc-remove {
+  color: #5c5a4c;
+}
+
+html[data-theme="fightclub"] .qc-item {
+  border-radius: 2px;
+}
+
+html[data-theme="fightclub"] .qc-item:hover {
+  background: rgba(28, 29, 26, 0.08);
+}
+
+html[data-theme="fightclub"] .notes-area {
+  font-size: 13px;
+}
+
+html[data-theme="fightclub"] .folder-mini {
+  border-radius: 4px;
+  background: rgba(236, 233, 223, 0.08);
+}
+
+html[data-theme="fightclub"] .widget-remove,
+html[data-theme="fightclub"] .link-remove {
+  border-radius: 50%;
+  background: rgba(14, 16, 14, 0.9);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ---------- Dialogs ---------- */
+html[data-theme="fightclub"] .modal {
+  border-radius: 3px;
+  background: rgba(14, 15, 13, 0.94);
+}
+
+html[data-theme="fightclub"] .modal::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+html[data-theme="fightclub"] .modal-form h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 22px;
+  letter-spacing: 0.03em;
+}
+
+html[data-theme="fightclub"] .modal-form input,
+html[data-theme="fightclub"] .modal textarea {
+  border-radius: 3px;
+  font-size: 14px;
+}
+
+html[data-theme="fightclub"] .btn {
+  border-radius: 3px;
+  font-size: 13px;
+}
+
+html[data-theme="fightclub"] .btn.solid {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #2a1218;
+}
+
+html[data-theme="fightclub"] .btn.solid:hover {
+  background: #f2b9c9;
+  transform: none;
+}
+
+html[data-theme="fightclub"] .live-dialog input[type="file"]::file-selector-button {
+  border-radius: 3px;
+}
+
+html[data-theme="fightclub"] .live-status {
+  color: var(--accent);
+}
+
+/* ---------- Chrome around the page ---------- */
+html[data-theme="fightclub"] .rail {
+  border-radius: 4px;
+}
+
+html[data-theme="fightclub"] .rail-btn {
+  border-radius: 3px;
+}
+
+html[data-theme="fightclub"] .rail-btn:hover,
+html[data-theme="fightclub"] .rail-btn:focus-visible {
+  background: rgba(231, 162, 181, 0.18);
+  color: var(--accent);
+}
+
+html[data-theme="fightclub"] .rail-btn::after {
+  border-radius: 3px;
+  background: rgba(8, 9, 7, 0.95);
+}
+
+html[data-theme="fightclub"] .fab {
+  border-radius: 4px;
+}
+
+html[data-theme="fightclub"] .fab:hover {
+  background: var(--accent);
+  color: #2a1218;
+}
+
+html[data-theme="fightclub"] .pill {
+  border-radius: 3px;
+  font-size: 13px;
+}
+
+html[data-theme="fightclub"] .pill:hover {
+  background: var(--glass-bg-strong);
+  border-color: rgba(231, 162, 181, 0.6);
+}
+
+html[data-theme="fightclub"] .credit {
+  font-size: 12px;
+}
+
+html[data-theme="fightclub"] .toast {
+  border-radius: 3px;
+  background: rgba(8, 9, 7, 0.95);
+}
+
+html[data-theme="fightclub"] :focus-visible {
+  outline-color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="fightclub"] .scrim::after {
+    animation: none;
+  }
+}
+
+/* Lighter grade while a video is playing so the footage stays readable */
+html.live-on[data-theme="fightclub"] .scrim {
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(8, 10, 6, 0.05), rgba(3, 4, 2, 0.6) 100%),
+    linear-gradient(rgba(74, 86, 52, 0.1), rgba(74, 86, 52, 0.1));
+  -webkit-backdrop-filter: saturate(0.75) contrast(1.05) brightness(1.15);
+  backdrop-filter: saturate(0.75) contrast(1.05) brightness(1.15);
+}

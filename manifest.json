@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Oasis",
+  "version": "1.0.0",
+  "description": "A calm, glassmorphic new tab dashboard with a live clock, unified search, quick links and serene wallpapers.",
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "permissions": ["storage", "unlimitedStorage", "identity"],
+  "host_permissions": [
+    "https://accounts.spotify.com/*",
+    "https://api.spotify.com/*"
+  ]
+}

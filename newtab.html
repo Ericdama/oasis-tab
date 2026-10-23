@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="fightclub">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>New Tab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400&family=Plus+Jakarta+Sans:wght@400;500;600&family=Special+Elite&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="newtab.css" />
+  <link rel="stylesheet" href="widgets.css" />
+  <link rel="stylesheet" href="live.css" />
+  <link rel="stylesheet" href="theme.css" />
+</head>
+<body>
+  <div class="wallpaper" id="wallpaperBack" aria-hidden="true"></div>
+  <div class="wallpaper" id="wallpaperFront" aria-hidden="true"></div>
+  <video class="live-video" id="liveVideo" style="position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-2;pointer-events:none" loop playsinline preload="auto" aria-hidden="true" hidden></video>
+  <div class="grain" id="grain" aria-hidden="true" hidden></div>
+  <div class="scrim" aria-hidden="true"></div>
+
+  <main class="page">
+    <header class="hero">
+      <button class="clock" id="clock" type="button" title="Switch between 12-hour and 24-hour time" aria-label="Current time. Press to switch between 12-hour and 24-hour format.">
+        <span id="clockText">00:00</span><span class="clock-suffix" id="clockSuffix"></span>
+      </button>
+      <h1 class="greeting" id="greeting">Good morning</h1>
+      <p class="quote" id="quote"></p>
+    </header>
+
+    <section class="search-wrap" aria-label="Search">
+      <form class="search glass" id="searchForm" autocomplete="off">
+        <div class="engine" id="engine">
+          <button class="engine-btn" id="engineBtn" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="Choose search engine">
+            <span id="engineName">Google</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.25 6 8l4-3.75" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <ul class="engine-menu glass" id="engineMenu" role="listbox" hidden>
+            <li role="option" data-engine="google">Google</li>
+            <li role="option" data-engine="bing">Bing</li>
+            <li role="option" data-engine="duckduckgo">DuckDuckGo</li>
+          </ul>
+        </div>
+        <input id="searchInput" type="text" name="q" placeholder="Search the web or type a URL" aria-label="Search the web or type a URL" spellcheck="false" autofocus />
+        <button class="search-submit" type="submit" aria-label="Search">
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </form>
+    </section>
+
+    <section class="widgets" id="widgets" aria-label="Widgets"></section>
+
+    <section class="links" aria-label="Quick links">
+      <ul class="links-grid" id="linksGrid"></ul>
+    </section>
+  </main>
+
+  <aside class="rail glass" aria-label="Controls">
+    <button class="rail-btn" id="railWidgets" type="button" aria-label="Add or remove widgets" data-tip="Widgets">
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+    </button>
+    <button class="rail-btn" id="railShortcut" type="button" aria-label="Add shortcut" data-tip="Add shortcut">
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3A4 4 0 0 0 11 18.7l1-1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="rail-btn rail-btn--mute" id="railMute" type="button" aria-label="Unmute video" data-tip="Unmute" hidden>
+      <!-- speaker-off (muted state) -->
+      <svg class="icon-muted" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h3l5 4V5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><line x1="22" y1="9" x2="16" y2="15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><line x1="16" y1="9" x2="22" y2="15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      <!-- speaker-on (unmuted state) -->
+      <svg class="icon-unmuted" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h3l5 4V5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+    </button>
+    <button class="rail-btn" id="railLive" type="button" aria-label="Live wallpaper" data-tip="Live wallpaper">
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="6" width="12.5" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="m16 11 4.5-2.5v7L16 13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="rail-btn" id="railTheme" type="button" aria-label="Switch theme" data-tip="Theme">
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>
+    </button>
+    <button class="rail-btn" id="railTime" type="button" aria-label="Switch between 12-hour and 24-hour time" data-tip="12h / 24h">
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </aside>
+
+  <button class="fab glass" id="fabWidgets" type="button" aria-label="Add or remove widgets">+</button>
+
+  <footer class="footer">
+    <button class="pill glass" id="nextWallpaper" type="button">📷 Next Oasis</button>
+    <span class="credit" id="wallpaperName"></span>
+  </footer>
+
+  <dialog class="modal glass" id="addDialog">
+    <form method="dialog" id="addForm" class="modal-form" autocomplete="off">
+      <h2>Add shortcut</h2>
+      <label for="linkName">Name</label>
+      <input id="linkName" type="text" maxlength="24" placeholder="Notion" required />
+      <label for="linkUrl">Address</label>
+      <input id="linkUrl" type="text" placeholder="notion.so" required />
+      <p class="form-error" id="formError" role="alert" hidden></p>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="cancelAdd">Cancel</button>
+        <button type="submit" class="btn solid">Add shortcut</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="newtab.js"></script>
+  <script src="widgets.js"></script>
+  <script src="live.js"></script>
+  <script src="theme.js"></script>
+</body>
+</html>
