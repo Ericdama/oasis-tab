@@ -9,6 +9,9 @@
   "permissions": ["storage", "unlimitedStorage", "identity"],
   "host_permissions": [
     "https://accounts.spotify.com/*",
-    "https://api.spotify.com/*"
+    "https://api.spotify.com/*",
+    "https://github.com/*",
+    "https://api.github.com/*",
+    "https://github-contributions-api.jogruber.de/*"
   ]
 }

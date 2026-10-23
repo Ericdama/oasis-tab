@@ -13,13 +13,14 @@
     countdown: { title: "Countdown", desc: "Days until a date you choose", size: "1x1" },
     weather: { title: "Weather", desc: "Current temperature for your city", size: "1x1" },
     calendar: { title: "Calendar", desc: "Today's date", size: "1x1" },
+    github: { title: "GitHub", desc: "iOS-style contribution activity graph", size: "2x1" },
     quickcopy: { title: "Quick copy", desc: "Snippets you copy with one click", size: "2x2" },
     notes: { title: "Notes", desc: "A scratchpad that saves as you type", size: "2x2" },
     folder: { title: "Folder", desc: "A group of shortcuts in one tile", size: "1x1" },
     spotify: { title: "Spotify", desc: "Live now-playing card — album art, controls, seek & volume", size: "2x2" },
   };
 
-  const DEFAULT_WIDGETS = ["quickcopy", "notes", "countdown", "weather", "calendar", "folder"];
+  const DEFAULT_WIDGETS = ["github", "quickcopy", "notes", "countdown", "weather", "calendar", "folder"];
 
   const DEFAULT_FOLDER = {
     name: "Tools",
@@ -32,11 +33,13 @@
   };
 
   const WEATHER_TTL = 15 * 60 * 1000;
+  const GITHUB_TTL = 30 * 60 * 1000;
 
   const ws = {
     widgets: DEFAULT_WIDGETS.slice(),
     countdown: null,
     weather: { city: "", lat: null, lon: null, cache: null },
+    github: { username: "", theme: "light", cache: null },
     snippets: [],
     notes: "",
     folder: JSON.parse(JSON.stringify(DEFAULT_FOLDER)),
@@ -124,10 +127,26 @@
       const id = `wf-${++fieldCounter}`;
       const label = node("label", "", field.label);
       label.htmlFor = id;
-      const input = field.multiline ? node("textarea") : node("input");
+      let input;
+      if (field.multiline) {
+        input = node("textarea");
+        input.value = field.value || "";
+      } else if (field.type === "select") {
+        input = node("select");
+        (field.options || []).forEach((opt) => {
+          const optVal = typeof opt === "object" ? opt.value : opt;
+          const optLabel = typeof opt === "object" ? opt.label : opt;
+          const optEl = node("option", "", optLabel);
+          optEl.value = optVal;
+          if (optVal === (field.value || "")) optEl.selected = true;
+          input.appendChild(optEl);
+        });
+      } else {
+        input = node("input");
+        input.type = field.type || "text";
+        input.value = field.value || "";
+      }
       input.id = id;
-      if (!field.multiline) input.type = field.type || "text";
-      input.value = field.value || "";
       if (field.placeholder) input.placeholder = field.placeholder;
       if (field.maxLength) input.maxLength = field.maxLength;
       if (field.required !== false) input.required = true;
@@ -380,6 +399,317 @@
         edit();
       }
     });
+    return el;
+  }
+
+  /* ---------- GitHub Widget ---------- */
+
+  function formatContributionDate(dateStr) {
+    if (!dateStr) return "";
+    try {
+      const [y, m, d] = dateStr.split("-").map(Number);
+      const dt = new Date(y, m - 1, d);
+      return dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
+  async function fetchGitHubContributions(username) {
+    const cleanUser = username.trim().replace(/^@/, "");
+    if (!cleanUser) throw new Error("Please enter a GitHub username.");
+
+    // 1. Primary: JSON API
+    try {
+      const res = await fetch(`https://github-contributions-api.jogruber.de/v4/${encodeURIComponent(cleanUser)}?y=last`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.contributions) && data.contributions.length > 0) {
+          return {
+            username: cleanUser,
+            total: data.total && typeof data.total.lastYear === "number" ? data.total.lastYear : null,
+            contributions: data.contributions,
+            at: Date.now(),
+          };
+        }
+      }
+      if (res.status === 400 || res.status === 404) {
+        throw new Error(`GitHub user "${cleanUser}" not found.`);
+      }
+    } catch (apiErr) {
+      if (apiErr.message && apiErr.message.includes("not found")) throw apiErr;
+    }
+
+    // 2. Fallback: Direct GitHub HTML scrape
+    try {
+      const res = await fetch(`https://github.com/users/${encodeURIComponent(cleanUser)}/contributions`);
+      if (!res.ok) {
+        if (res.status === 404) throw new Error(`GitHub user "${cleanUser}" not found.`);
+        throw new Error("Could not reach GitHub.");
+      }
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const dayCells = doc.querySelectorAll("td[data-date]");
+      if (dayCells.length === 0) throw new Error(`No contribution data found for "${cleanUser}".`);
+
+      const contributions = [];
+      dayCells.forEach((td) => {
+        const date = td.getAttribute("data-date");
+        const level = parseInt(td.getAttribute("data-level") || "0", 10);
+        const id = td.id;
+        let count = level > 0 ? 1 : 0;
+        if (id) {
+          const tooltip = doc.querySelector(`tool-tip[for="${id}"]`);
+          if (tooltip) {
+            const m = tooltip.textContent.match(/(\d+)\s+contribution/);
+            if (m) count = parseInt(m[1], 10);
+          }
+        }
+        contributions.push({ date, level, count });
+      });
+
+      let total = null;
+      const totalEl = doc.querySelector(".js-yearly-contributions h2");
+      if (totalEl) {
+        const m = totalEl.textContent.replace(/,/g, "").match(/(\d+)/);
+        if (m) total = parseInt(m[1], 10);
+      }
+
+      return {
+        username: cleanUser,
+        total,
+        contributions,
+        at: Date.now(),
+      };
+    } catch (fallbackErr) {
+      throw fallbackErr;
+    }
+  }
+
+  function get16WeekSlice(contributions) {
+    if (!contributions || contributions.length === 0) return [];
+    const lastItem = contributions[contributions.length - 1];
+    const [y, m, d] = (lastItem.date || "").split("-").map(Number);
+    const lastDate = !isNaN(y) ? new Date(y, m - 1, d) : new Date();
+    const dayOfWeek = lastDate.getDay(); // 0 = Sun ... 6 = Sat
+
+    // 15 full weeks (105 days) + (dayOfWeek + 1) days of current week
+    const neededPastDays = 15 * 7 + (dayOfWeek + 1);
+    const slice = contributions.slice(-neededPastDays);
+
+    const futureDaysCount = 6 - dayOfWeek;
+    const result = slice.slice();
+    for (let i = 0; i < futureDaysCount; i++) {
+      result.push({ empty: true });
+    }
+
+    while (result.length < 112) {
+      result.unshift({ date: "", count: 0, level: 0 });
+    }
+    return result.slice(-112);
+  }
+
+  function renderGitHubGrid(contributions) {
+    const wrap = node("div", "gh-grid-wrap");
+    const grid = node("div", "gh-grid");
+    const slice = get16WeekSlice(contributions);
+
+    slice.forEach((item) => {
+      const cell = node("div", "gh-cell");
+      if (item.empty) {
+        cell.classList.add("gh-empty");
+      } else {
+        const lvl = typeof item.level === "number" ? Math.min(Math.max(item.level, 0), 4) : 0;
+        cell.dataset.level = String(lvl);
+        const count = item.count || 0;
+        const countStr = count === 0 ? "No contributions" : `${count} contribution${count > 1 ? "s" : ""}`;
+        cell.title = `${countStr} on ${formatContributionDate(item.date)}`;
+      }
+      grid.appendChild(cell);
+    });
+
+    wrap.appendChild(grid);
+    return wrap;
+  }
+
+  function renderGitHubLoading() {
+    const wrap = node("div", "gh-grid-wrap gh-loading");
+    const grid = node("div", "gh-grid");
+    for (let i = 0; i < 112; i++) {
+      const cell = node("div", "gh-cell");
+      cell.dataset.level = "0";
+      grid.appendChild(cell);
+    }
+    wrap.appendChild(grid);
+    return wrap;
+  }
+
+  function renderGitHubPreview() {
+    const wrap = node("div", "gh-grid-wrap gh-preview");
+    const grid = node("div", "gh-grid");
+    const demoLevels = [
+      0, 1, 0, 0, 0, 0, 1,
+      0, 2, 4, 3, 1, 2, 4,
+      4, 3, 2, 2, 1, 3, 3,
+      2, 2, 1, 1, 2, 3, 2,
+      3, 1, 0, 1, 0, 1, 2,
+      0, 0, 0, 0, 1, 1, 2,
+      1, 2, 0, 0, 3, 2, 1,
+      2, 1, 0, 0, 2, 1, 3,
+      2, 0, 3, 3, 1, 2, 0,
+      3, 1, 2, 2, 2, 3, 4,
+      1, 2, 1, 1, 0, 2, 2,
+      0, 0, 1, 0, 1, 1, 1,
+      2, 1, 0, 3, 2, 4, 2,
+      1, 2, 1, 2, 1, 0, 3,
+      3, 2, 2, 1, 0, 2, 3,
+      1, 2, 1, 0, 2, 1
+    ];
+    for (let i = 0; i < 112; i++) {
+      const cell = node("div", "gh-cell");
+      if (i >= 111) {
+        cell.classList.add("gh-empty");
+      } else {
+        cell.dataset.level = String(demoLevels[i % demoLevels.length]);
+      }
+      grid.appendChild(cell);
+    }
+    wrap.appendChild(grid);
+
+    const overlay = node("div", "gh-overlay");
+    const btn = node("div", "gh-prompt-btn");
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg><span>Set GitHub username</span>`;
+    overlay.appendChild(btn);
+    wrap.appendChild(overlay);
+
+    return wrap;
+  }
+
+  function editGitHubUser() {
+    openForm({
+      title: "GitHub widget",
+      submitLabel: "Save & Show Contributions",
+      fields: [
+        {
+          label: "GitHub username",
+          value: ws.github.username || "",
+          placeholder: "e.g. torvalds",
+          maxLength: 39,
+        },
+        {
+          label: "Card style",
+          type: "select",
+          value: ws.github.theme || "light",
+          options: [
+            { value: "light", label: "iOS White (Default)" },
+            { value: "dark", label: "GitHub Dark" },
+            { value: "glass", label: "Oasis Glass" },
+          ],
+        },
+      ],
+      onSubmit: async ([username, theme]) => {
+        if (!username) return "Please enter a GitHub username.";
+        try {
+          const data = await fetchGitHubContributions(username);
+          ws.github = {
+            username: data.username,
+            theme: theme || "light",
+            cache: data,
+          };
+          await save("github");
+          renderWidgets();
+          showToast(`Connected to @${data.username}`);
+        } catch (err) {
+          return err.message || "Could not fetch GitHub contributions. Check username.";
+        }
+      },
+    });
+  }
+
+  function buildGitHub() {
+    const themeClass = ws.github.theme === "dark" ? "gh-theme-dark" : ws.github.theme === "glass" ? "gh-theme-glass" : "gh-theme-light";
+    const el = widgetShell("github", `widget-github ${themeClass}`);
+    el.setAttribute("role", "button");
+    el.tabIndex = 0;
+
+    const username = ws.github.username;
+
+    // Edit button in top-right next to remove button
+    const editBtn = node("button", "gh-edit-btn");
+    editBtn.type = "button";
+    editBtn.setAttribute("aria-label", "Configure GitHub widget");
+    editBtn.innerHTML = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`;
+    editBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      editGitHubUser();
+    });
+    el.appendChild(editBtn);
+
+    if (!username) {
+      el.setAttribute("aria-label", "GitHub widget: Click to connect your GitHub profile");
+      el.appendChild(renderGitHubPreview());
+      el.addEventListener("click", editGitHubUser);
+      return el;
+    }
+
+    el.setAttribute("aria-label", `GitHub contributions for @${username}. Click to open profile.`);
+    el.addEventListener("click", (e) => {
+      if (e.target.closest(".widget-remove") || e.target.closest(".gh-edit-btn")) return;
+      window.open(`https://github.com/${encodeURIComponent(username)}`, "_blank", "noopener,noreferrer");
+    });
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        if (e.target === el) {
+          e.preventDefault();
+          window.open(`https://github.com/${encodeURIComponent(username)}`, "_blank", "noopener,noreferrer");
+        }
+      }
+    });
+
+    // Top-left discreet badge on hover
+    const badge = node("div", "gh-badge");
+    badge.innerHTML = `<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg><span>${username}</span>`;
+    el.appendChild(badge);
+
+    const cache = ws.github.cache;
+    if (cache && Array.isArray(cache.contributions) && cache.username && cache.username.toLowerCase() === username.toLowerCase()) {
+      el.appendChild(renderGitHubGrid(cache.contributions));
+    } else {
+      el.appendChild(renderGitHubLoading());
+    }
+
+    if (!cache || !cache.username || cache.username.toLowerCase() !== username.toLowerCase() || Date.now() - (cache.at || 0) > GITHUB_TTL) {
+      fetchGitHubContributions(username)
+        .then((data) => {
+          ws.github.cache = data;
+          save("github");
+          const current = container.querySelector(`.widget-github[data-id="github"]`);
+          if (current) {
+            const grid = current.querySelector(".gh-grid-wrap");
+            if (grid) grid.replaceWith(renderGitHubGrid(data.contributions));
+          }
+        })
+        .catch((err) => {
+          const current = container.querySelector(`.widget-github[data-id="github"]`);
+          if (current) {
+            const hasGrid = current.querySelector(".gh-grid:not(.gh-loading .gh-grid)");
+            if (!hasGrid) {
+              const grid = current.querySelector(".gh-grid-wrap");
+              const errEl = node("div", "gh-error");
+              errEl.append(
+                node("span", "gh-err-text", err.message || "Failed to load contributions"),
+                node("button", "btn ghost gh-err-btn", "Retry")
+              );
+              errEl.querySelector("button").addEventListener("click", (e) => {
+                e.stopPropagation();
+                renderWidgets();
+              });
+              if (grid) grid.replaceWith(errEl);
+            }
+          }
+        });
+    }
+
     return el;
   }
 
@@ -1181,6 +1511,7 @@
     countdown: buildCountdown,
     weather: buildWeather,
     calendar: buildCalendar,
+    github: buildGitHub,
     quickcopy: buildQuickCopy,
     notes: buildNotes,
     folder: buildFolder,
@@ -1200,7 +1531,10 @@
   async function setWidgetEnabled(id, enabled) {
     const has = ws.widgets.includes(id);
     if (enabled && !has) ws.widgets = [...ws.widgets, id];
-    if (!enabled && has) ws.widgets = ws.widgets.filter((w) => w !== id);
+    if (!enabled && has) {
+      ws.widgets = ws.widgets.filter((w) => w !== id);
+      if (id === "github") await storageSet({ github_dismissed: true });
+    }
     renderWidgets();
     await save("widgets");
   }
@@ -1253,13 +1587,20 @@
 
   async function init() {
     try {
-      const stored = await storageGet(["widgets", "countdown", "weather", "snippets", "notes", "folder"]);
+      const stored = await storageGet(["widgets", "countdown", "weather", "github", "snippets", "notes", "folder", "github_dismissed"]);
       if (Array.isArray(stored.widgets)) ws.widgets = stored.widgets.filter((id) => WIDGET_DEFS[id]);
       if (stored.countdown && typeof stored.countdown.date === "string") ws.countdown = stored.countdown;
       if (stored.weather && typeof stored.weather === "object") ws.weather = { ...ws.weather, ...stored.weather };
+      if (stored.github && typeof stored.github === "object") ws.github = { ...ws.github, ...stored.github };
       if (Array.isArray(stored.snippets)) ws.snippets = stored.snippets;
       if (typeof stored.notes === "string") ws.notes = stored.notes;
       if (stored.folder && Array.isArray(stored.folder.links)) ws.folder = stored.folder;
+
+      // Auto-include github widget for existing users who haven't dismissed it
+      if (Array.isArray(stored.widgets) && !stored.widgets.includes("github") && !stored.github_dismissed) {
+        ws.widgets.splice(0, 0, "github");
+        save("widgets");
+      }
     } catch (error) {
       console.error("Oasis: could not read widget settings.", error);
     }

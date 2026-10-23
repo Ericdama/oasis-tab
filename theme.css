@@ -295,6 +295,7 @@ html[data-theme="fightclub"] .modal-form h2 {
 }
 
 html[data-theme="fightclub"] .modal-form input,
+html[data-theme="fightclub"] .modal-form select,
 html[data-theme="fightclub"] .modal textarea {
   border-radius: 3px;
   font-size: 14px;

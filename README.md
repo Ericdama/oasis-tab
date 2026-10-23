@@ -23,6 +23,7 @@
   - Live now-playing card with real-time album art, progress bar, play/pause, skip controls, and volume slider.
   - Secure authorization using Spotify's OAuth PKCE flow (no client secret needed).
 - 🧩 **Modular Widget Grid**:
+  - GitHub contribution activity widget inspired by iOS (16-week heat map with hover details & live stats).
   - Weather widget powered by Open-Meteo.
   - Countdown and target tracker.
   - Mini calendar.
