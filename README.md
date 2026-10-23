@@ -6,6 +6,11 @@
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 ![Pure JavaScript](https://img.shields.io/badge/Vanilla-JS%20%2F%20CSS-orange?style=flat-square)
 
+<p align="center">
+  <img src="media/screenshot-1.png" width="48%" alt="Oasis Dark Theme" />
+  <img src="media/screenshot-2.png" width="48%" alt="Oasis Vintage Theme" />
+</p>
+
 ---
 
 ## ✨ Features
